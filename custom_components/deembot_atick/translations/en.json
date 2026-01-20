@@ -10,13 +10,13 @@
             }
         },
         "error": {
-            "no_devices_found": "Not found device",
-            "cannot_connect": "Timeout connect",
-            "pin_invalid": "PIN invalid",
+            "no_devices_found": "No device found",
+            "cannot_connect": "Connection timeout",
+            "pin_invalid": "Invalid PIN",
             "unknown": "Unknown error"
         },
         "abort": {
-            "no_devices_found": "Nоt found other devices",
+            "no_devices_found": "No other devices found",
             "reconfigure_successful": "Reconfigure successful"
         }
     },
@@ -24,7 +24,7 @@
         "sensor": {
             "deembot_atick": {
                 "counter_a_value": {
-                    "name": "Water counter A"
+                    "name": "Water Counter A"
                 },
                 "counter_b_value": {
                     "name": "Water Counter B"

@@ -12,10 +12,28 @@ from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, DEFAULT_PIN_DEVICE
+from .const import DOMAIN, DEFAULT_PIN_DEVICE, UUID_SERVICE_AG
 from .device import ATickBTDevice
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def is_atick_device(discovery_info: BluetoothServiceInfoBleak) -> bool:
+    """Check if the discovered device is an aTick device.
+
+    Checks both service UUID and device name to support both
+    original and renamed devices.
+    """
+    # Check by service UUID (works even if device is renamed)
+    if UUID_SERVICE_AG.lower() in [uuid.lower() for uuid in discovery_info.service_uuids]:
+        return True
+
+    # Fallback: check by name prefix for devices without service UUID in advertisement
+    if discovery_info.name and discovery_info.name.startswith('aTick'):
+        return True
+
+    return False
+
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -31,7 +49,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        if not discovery_info.name.startswith('aTick'):
+        if not is_atick_device(discovery_info):
             return self.async_abort(reason="not_supported")
 
         self._discovery_info = discovery_info
@@ -96,7 +114,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if discovery.address in current_addresses or discovery.address in self._discovered_devices:
                         continue
 
-                    if discovery.name.startswith('aTick'):
+                    if is_atick_device(discovery):
                         self._discovered_devices[discovery.address] = discovery
 
             if not self._discovered_devices:
