@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2024-01-20
+
 ### Added
 - Options Flow for configuring poll interval and counter offsets
 - Service `set_counter_value` for manually setting counter values
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Proper error handling and logging throughout the codebase
 - Type hints for better code quality
 - Comprehensive README with usage examples and FAQ
+- Missing 'requirements' field in manifest.json
 
 ### Fixed
 - Critical bug in sensor state restoration (was saving State object instead of float value)
@@ -25,13 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo: `midLittleIndian` → `midLittleEndian`
 - Cyrillic 'о' in English translation "Nоt found" → "Not found"
 - Inconsistent error messages in translations
+- Documentation and issue tracker URLs in manifest.json
 
 ### Changed
 - Counter values now properly apply ratio (multiplier) on display
 - Counter values now support offsets for initial readings
-- Poll interval is now configurable via Options Flow
+- Poll interval is now configurable via Options Flow (60-86400 seconds)
 - Improved English translations and capitalization consistency
 - Enhanced documentation with examples and troubleshooting
+- Version bumped to 0.0.4
 
 ## [0.0.3] - 2024-XX-XX
 
@@ -57,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project structure
 - HACS integration
 
-[Unreleased]: https://github.com/trudenboy/hassio-atick/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/trudenboy/hassio-atick/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/trudenboy/hassio-atick/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/trudenboy/hassio-atick/releases/tag/v0.0.3
 [0.0.2]: https://github.com/trudenboy/hassio-atick/releases/tag/v0.0.2
 [0.0.1]: https://github.com/trudenboy/hassio-atick/releases/tag/v0.0.1
