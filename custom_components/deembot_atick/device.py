@@ -2,6 +2,7 @@ import array
 import asyncio
 import dataclasses
 import logging
+import struct
 import time
 from contextlib import AsyncExitStack
 from textwrap import wrap
@@ -28,8 +29,15 @@ class ATickParsedAdvertisementData:
 
 
 class ATickBTDevice:
-    def __init__(self, ble_device: BLEDevice):
-        self._last_active_update = -ACTIVE_POLL_INTERVAL
+    def __init__(self, ble_device: BLEDevice, poll_interval: int = ACTIVE_POLL_INTERVAL):
+        """Initialize aTick BLE device.
+
+        Args:
+            ble_device: BLE device object
+            poll_interval: Active polling interval in seconds (default: 24 hours)
+        """
+        self._poll_interval = poll_interval
+        self._last_active_update = -self._poll_interval
         self._ble_device = ble_device
         self.base_unique_id: str = self._ble_device.address
         self._client: BleakClient | None = None
@@ -44,17 +52,32 @@ class ATickBTDevice:
             'counter_b_value': None,
             'counter_a_ratio': 0.01,
             'counter_b_ratio': 0.01,
+            'counter_a_offset': 0.0,
+            'counter_b_offset': 0.0,
         }
 
     def active_poll_needed(self, seconds_since_last_poll: float | None) -> bool:
-        if seconds_since_last_poll is not None and seconds_since_last_poll < ACTIVE_POLL_INTERVAL:
+        """Check if active polling is needed based on configured interval."""
+        if seconds_since_last_poll is not None and seconds_since_last_poll < self._poll_interval:
             return False
 
-        return (time.monotonic() - self._last_active_update) > ACTIVE_POLL_INTERVAL
+        return (time.monotonic() - self._last_active_update) > self._poll_interval
 
     async def active_full_update(self):
+        """Perform full active update of device information and ratios."""
         try:
             await self.device_info_update()
+
+            # Update counter ratios (multipliers) from device
+            try:
+                await self.update_counters_ratio()
+                _LOGGER.debug(
+                    'Updated ratios: A=%s, B=%s',
+                    self.data['counter_a_ratio'],
+                    self.data['counter_b_ratio']
+                )
+            except Exception as err:
+                _LOGGER.debug('Could not update ratios: %s', err)
 
             # Требуется сопряжение устройства
             # await self.update_counters_value()
@@ -73,11 +96,12 @@ class ATickBTDevice:
         _LOGGER.debug('device info active update')
 
     def parse_advertisement_data(self, pin: None | str, adv: AdvertisementData) -> ATickParsedAdvertisementData | None:
+        """Parse counter values from BLE advertisement data."""
         # Может и не быть
         if not adv.manufacturer_data:
             return None
 
-        new_values = (0, 0)
+        new_values = (0.0, 0.0)
 
         try:
             new_values = self.parseAdvValuesCounters(
@@ -85,8 +109,10 @@ class ATickBTDevice:
                 pin or DEFAULT_PIN_DEVICE,
                 self._ble_device.address
             )
-        except Exception:
-            pass
+        except (IndexError, ValueError, KeyError) as err:
+            _LOGGER.debug("Failed to parse advertisement data: %s", err)
+        except Exception as err:
+            _LOGGER.warning("Unexpected error parsing advertisement data: %s", err, exc_info=True)
 
         return ATickParsedAdvertisementData(
             counter_a_value=new_values[0],
@@ -107,10 +133,15 @@ class ATickBTDevice:
         _LOGGER.debug('update from advertisement')
 
     async def stop(self):
-        try:
-            await self._client.disconnect()
-        except Exception:
-            pass
+        """Disconnect from BLE device."""
+        if self._client is not None:
+            try:
+                await self._client.disconnect()
+                _LOGGER.debug("Successfully disconnected from device")
+            except BleakError as err:
+                _LOGGER.debug("BleakError during disconnect: %s", err)
+            except Exception as err:
+                _LOGGER.warning("Unexpected error during disconnect: %s", err, exc_info=True)
 
         self._client = None
 
@@ -178,7 +209,11 @@ class ATickBTDevice:
             self.data['model'] = data.decode("utf-8")
 
     @staticmethod
-    def is_encrypted(data: bytes):
+    def is_encrypted(data: bytes) -> bool:
+        """Check if advertisement data is encrypted."""
+        if len(data) < 8:
+            _LOGGER.debug("Data too short to check encryption: %d bytes", len(data))
+            return False
         return (int.from_bytes(data[7:8]) & 16) != 0
 
     @staticmethod
@@ -190,39 +225,60 @@ class ATickBTDevice:
         return int(n * (10 ** places)) / 10 ** places
 
     @staticmethod
-    def midLittleIndian(valueHex):
+    def midLittleEndian(valueHex):
         arr = wrap(valueHex, 2)
 
         return arr[2] + arr[3] + arr[0] + arr[1]
 
     def parseAdvValuesCounters(self, data, KEY, MAC):
-        if self.is_encrypted(data):
-            res = ''
-            i4 = 0
+        """Parse and decrypt counter values from advertisement data.
 
-            for i in range(6):
-                i2 = i * 3
-                i4 += int(MAC[i2:i2 + 2], 16)
+        Args:
+            data: Raw advertisement data bytes
+            KEY: PIN code for decryption
+            MAC: Device MAC address
 
-            for i3 in range(4):
-                i4 += (int(KEY) >> (i3 * 8)) & 255
+        Returns:
+            List of two float values [counter_a, counter_b]
+        """
+        if not data or len(data) < 9:
+            _LOGGER.debug("Advertisement data too short: %s bytes", len(data) if data else 0)
+            return [0.0, 0.0]
 
-            i8 = ((i4 ^ 255) + 1) & 255
+        try:
+            if self.is_encrypted(data):
+                res = ''
+                i4 = 0
 
-            for i5 in range(1, 9):
-                res += (self.decToHex((data[i5] ^ i8) & 255))
+                for i in range(6):
+                    i2 = i * 3
+                    i4 += int(MAC[i2:i2 + 2], 16)
 
-            floatValues = array.array(
-                'f',
-                bytes.fromhex(self.midLittleIndian(res[0:8]) + self.midLittleIndian(res[8:16]))
-            ).tolist()
-        else:
-            floatValues = array.array('f', data[1:9]).tolist()
+                for i3 in range(4):
+                    i4 += (int(KEY) >> (i3 * 8)) & 255
 
-        return [
-            self.truncate_float(floatValues[0], 2),
-            self.truncate_float(floatValues[1], 2)
-        ]
+                i8 = ((i4 ^ 255) + 1) & 255
+
+                for i5 in range(1, 9):
+                    res += (self.decToHex((data[i5] ^ i8) & 255))
+
+                floatValues = array.array(
+                    'f',
+                    bytes.fromhex(self.midLittleEndian(res[0:8]) + self.midLittleEndian(res[8:16]))
+                ).tolist()
+            else:
+                floatValues = array.array('f', data[1:9]).tolist()
+
+            return [
+                self.truncate_float(floatValues[0], 2),
+                self.truncate_float(floatValues[1], 2)
+            ]
+        except (IndexError, ValueError, struct.error) as err:
+            _LOGGER.error("Failed to parse counter values: %s", err)
+            return [0.0, 0.0]
+        except Exception as err:
+            _LOGGER.exception("Unexpected error parsing counter values: %s", err)
+            return [0.0, 0.0]
 
     @property
     def name(self):
@@ -242,8 +298,33 @@ class ATickBTDevice:
 
     @property
     def counter_a_value(self):
+        """Get counter A value (raw, without ratio applied)."""
         return self.data['counter_a_value']
 
     @property
     def counter_b_value(self):
+        """Get counter B value (raw, without ratio applied)."""
         return self.data['counter_b_value']
+
+    def get_counter_value_with_ratio(self, counter_key: str) -> float | None:
+        """Get counter value with ratio (multiplier) and offset applied.
+
+        Args:
+            counter_key: Either 'counter_a_value' or 'counter_b_value'
+
+        Returns:
+            Counter value multiplied by ratio and with offset added, or None if value is None
+        """
+        value = self.data.get(counter_key)
+        if value is None:
+            return None
+
+        ratio_key = counter_key.replace('_value', '_ratio')
+        offset_key = counter_key.replace('_value', '_offset')
+
+        ratio = self.data.get(ratio_key, 1.0)
+        offset = self.data.get(offset_key, 0.0)
+
+        # Apply ratio and offset, then round to 3 decimal places
+        result = (value * ratio) + offset
+        return round(result, 3)

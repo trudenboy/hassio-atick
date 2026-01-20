@@ -12,10 +12,33 @@ from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, DEFAULT_PIN_DEVICE
+from .const import DOMAIN, DEFAULT_PIN_DEVICE, UUID_SERVICE_AG, ACTIVE_POLL_INTERVAL
 from .device import ATickBTDevice
 
 _LOGGER = logging.getLogger(__name__)
+
+# Options configuration constants
+CONF_POLL_INTERVAL = "poll_interval"
+CONF_COUNTER_A_OFFSET = "counter_a_offset"
+CONF_COUNTER_B_OFFSET = "counter_b_offset"
+
+
+def is_atick_device(discovery_info: BluetoothServiceInfoBleak) -> bool:
+    """Check if the discovered device is an aTick device.
+
+    Checks both service UUID and device name to support both
+    original and renamed devices.
+    """
+    # Check by service UUID (works even if device is renamed)
+    if UUID_SERVICE_AG.lower() in [uuid.lower() for uuid in discovery_info.service_uuids]:
+        return True
+
+    # Fallback: check by name prefix for devices without service UUID in advertisement
+    if discovery_info.name and discovery_info.name.startswith('aTick'):
+        return True
+
+    return False
+
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -25,13 +48,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._discovery_info: BluetoothServiceInfoBleak | None = None
         self._discovered_devices: dict[str, BluetoothServiceInfoBleak] = {}
 
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
     async def async_step_bluetooth(self, discovery_info: BluetoothServiceInfoBleak) -> FlowResult:
         """Handle the bluetooth discovery step."""
 
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        if not discovery_info.name.startswith('aTick'):
+        if not is_atick_device(discovery_info):
             return self.async_abort(reason="not_supported")
 
         self._discovery_info = discovery_info
@@ -96,7 +124,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if discovery.address in current_addresses or discovery.address in self._discovered_devices:
                         continue
 
-                    if discovery.name.startswith('aTick'):
+                    if is_atick_device(discovery):
                         self._discovered_devices[discovery.address] = discovery
 
             if not self._discovered_devices:
@@ -145,6 +173,73 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=vol.Schema({
                 vol.Required(CONF_PIN, default=current_value): cv.string,
+            }),
+            errors=errors
+        )
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for aTick integration."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage the options."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            # Validate poll interval
+            poll_interval = user_input.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL)
+            if poll_interval < 60:
+                errors[CONF_POLL_INTERVAL] = "poll_interval_too_short"
+
+            # Validate counter offsets
+            counter_a_offset = user_input.get(CONF_COUNTER_A_OFFSET, 0.0)
+            counter_b_offset = user_input.get(CONF_COUNTER_B_OFFSET, 0.0)
+
+            if counter_a_offset < 0:
+                errors[CONF_COUNTER_A_OFFSET] = "offset_negative"
+            if counter_b_offset < 0:
+                errors[CONF_COUNTER_B_OFFSET] = "offset_negative"
+
+            if not errors:
+                return self.async_create_entry(
+                    title="",
+                    data={
+                        CONF_POLL_INTERVAL: poll_interval,
+                        CONF_COUNTER_A_OFFSET: counter_a_offset,
+                        CONF_COUNTER_B_OFFSET: counter_b_offset,
+                    }
+                )
+
+        # Get current values from options or use defaults
+        current_poll_interval = self.config_entry.options.get(
+            CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL
+        )
+        current_counter_a_offset = self.config_entry.options.get(
+            CONF_COUNTER_A_OFFSET, 0.0
+        )
+        current_counter_b_offset = self.config_entry.options.get(
+            CONF_COUNTER_B_OFFSET, 0.0
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_POLL_INTERVAL,
+                    default=current_poll_interval
+                ): vol.All(vol.Coerce(int), vol.Range(min=60, max=86400)),
+                vol.Optional(
+                    CONF_COUNTER_A_OFFSET,
+                    default=current_counter_a_offset
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                vol.Optional(
+                    CONF_COUNTER_B_OFFSET,
+                    default=current_counter_b_offset
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
             }),
             errors=errors
         )
