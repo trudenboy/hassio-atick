@@ -80,7 +80,14 @@ class ATickWaterCounterSensor(BaseEntity, SensorEntity, RestoreEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self._device.data[self.entity_description.key]
+        value = self._device.data[self.entity_description.key]
+        if value is None:
+            return None
+
+        # Применяем множитель (ratio) к показаниям
+        ratio_key = self.entity_description.key.replace('_value', '_ratio')
+        ratio = self._device.data.get(ratio_key, 1.0)
+        return value * ratio
 
 
 class ATickRSSISensor(BaseEntity, SensorEntity):
