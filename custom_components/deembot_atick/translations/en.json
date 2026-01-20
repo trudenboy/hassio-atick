@@ -13,11 +13,26 @@
             "no_devices_found": "No device found",
             "cannot_connect": "Connection timeout",
             "pin_invalid": "Invalid PIN",
-            "unknown": "Unknown error"
+            "unknown": "Unknown error",
+            "poll_interval_too_short": "Poll interval must be at least 60 seconds",
+            "offset_negative": "Offset cannot be negative"
         },
         "abort": {
             "no_devices_found": "No other devices found",
             "reconfigure_successful": "Reconfigure successful"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "aTick Options",
+                "description": "Configure polling interval and counter offsets",
+                "data": {
+                    "poll_interval": "Poll interval (seconds, 60-86400)",
+                    "counter_a_offset": "Counter A offset (m³)",
+                    "counter_b_offset": "Counter B offset (m³)"
+                }
+            }
         }
     },
     "entity": {

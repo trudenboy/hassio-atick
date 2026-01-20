@@ -29,8 +29,15 @@ class ATickParsedAdvertisementData:
 
 
 class ATickBTDevice:
-    def __init__(self, ble_device: BLEDevice):
-        self._last_active_update = -ACTIVE_POLL_INTERVAL
+    def __init__(self, ble_device: BLEDevice, poll_interval: int = ACTIVE_POLL_INTERVAL):
+        """Initialize aTick BLE device.
+
+        Args:
+            ble_device: BLE device object
+            poll_interval: Active polling interval in seconds (default: 24 hours)
+        """
+        self._poll_interval = poll_interval
+        self._last_active_update = -self._poll_interval
         self._ble_device = ble_device
         self.base_unique_id: str = self._ble_device.address
         self._client: BleakClient | None = None
@@ -45,13 +52,16 @@ class ATickBTDevice:
             'counter_b_value': None,
             'counter_a_ratio': 0.01,
             'counter_b_ratio': 0.01,
+            'counter_a_offset': 0.0,
+            'counter_b_offset': 0.0,
         }
 
     def active_poll_needed(self, seconds_since_last_poll: float | None) -> bool:
-        if seconds_since_last_poll is not None and seconds_since_last_poll < ACTIVE_POLL_INTERVAL:
+        """Check if active polling is needed based on configured interval."""
+        if seconds_since_last_poll is not None and seconds_since_last_poll < self._poll_interval:
             return False
 
-        return (time.monotonic() - self._last_active_update) > ACTIVE_POLL_INTERVAL
+        return (time.monotonic() - self._last_active_update) > self._poll_interval
 
     async def active_full_update(self):
         """Perform full active update of device information and ratios."""
@@ -297,21 +307,24 @@ class ATickBTDevice:
         return self.data['counter_b_value']
 
     def get_counter_value_with_ratio(self, counter_key: str) -> float | None:
-        """Get counter value with ratio (multiplier) applied.
+        """Get counter value with ratio (multiplier) and offset applied.
 
         Args:
             counter_key: Either 'counter_a_value' or 'counter_b_value'
 
         Returns:
-            Counter value multiplied by its ratio, or None if value is None
+            Counter value multiplied by ratio and with offset added, or None if value is None
         """
         value = self.data.get(counter_key)
         if value is None:
             return None
 
         ratio_key = counter_key.replace('_value', '_ratio')
-        ratio = self.data.get(ratio_key, 1.0)
+        offset_key = counter_key.replace('_value', '_offset')
 
-        # Apply ratio and round to 3 decimal places
-        result = value * ratio
+        ratio = self.data.get(ratio_key, 1.0)
+        offset = self.data.get(offset_key, 0.0)
+
+        # Apply ratio and offset, then round to 3 decimal places
+        result = (value * ratio) + offset
         return round(result, 3)

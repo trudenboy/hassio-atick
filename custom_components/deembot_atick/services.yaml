@@ -1,0 +1,53 @@
+# Services for aTick integration
+set_counter_value:
+  name: Set counter value
+  description: Manually set the current value of a water counter
+  fields:
+    entity_id:
+      name: Entity
+      description: Water counter entity to update
+      required: true
+      selector:
+        entity:
+          filter:
+            - integration: deembot_atick
+              domain: sensor
+    value:
+      name: Value
+      description: New counter value in cubic meters (m³)
+      required: true
+      example: 123.45
+      selector:
+        number:
+          min: 0
+          max: 999999
+          step: 0.001
+          mode: box
+          unit_of_measurement: "m³"
+
+reset_counter:
+  name: Reset counter
+  description: Reset a water counter to zero or specified value
+  fields:
+    entity_id:
+      name: Entity
+      description: Water counter entity to reset
+      required: true
+      selector:
+        entity:
+          filter:
+            - integration: deembot_atick
+              domain: sensor
+    value:
+      name: Reset Value
+      description: Value to reset counter to (default is 0)
+      required: false
+      default: 0
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 999999
+          step: 0.001
+          mode: box
+          unit_of_measurement: "m³"
