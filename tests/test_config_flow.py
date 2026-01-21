@@ -94,6 +94,7 @@ class TestOptionsFlow:
         result = await flow.async_step_init(
             user_input={
                 "poll_interval": 7200,
+                "use_device_ratio": False,
                 "counter_a_ratio": 1.0,
                 "counter_b_ratio": 1.0,
                 "counter_a_offset": 10.5,
@@ -103,6 +104,7 @@ class TestOptionsFlow:
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["poll_interval"] == 7200
+        assert result["data"]["use_device_ratio"] is False
         assert result["data"]["counter_a_ratio"] == 1.0
         assert result["data"]["counter_b_ratio"] == 1.0
         assert result["data"]["counter_a_offset"] == 10.5
@@ -119,6 +121,7 @@ class TestOptionsFlow:
         result = await flow.async_step_init(
             user_input={
                 "poll_interval": 30,  # Too short (min is 60)
+                "use_device_ratio": False,
                 "counter_a_ratio": 1.0,
                 "counter_b_ratio": 1.0,
                 "counter_a_offset": 0.0,
@@ -140,6 +143,7 @@ class TestOptionsFlow:
         result = await flow.async_step_init(
             user_input={
                 "poll_interval": 3600,
+                "use_device_ratio": False,
                 "counter_a_ratio": 1.0,
                 "counter_b_ratio": 1.0,
                 "counter_a_offset": -10.0,  # Negative not allowed

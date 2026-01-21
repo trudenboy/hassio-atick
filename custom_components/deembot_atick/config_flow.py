@@ -15,6 +15,7 @@ from homeassistant.components.bluetooth import (
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -33,6 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Options configuration constants
 CONF_POLL_INTERVAL = "poll_interval"
+CONF_USE_DEVICE_RATIO = "use_device_ratio"
 CONF_COUNTER_A_RATIO = "counter_a_ratio"
 CONF_COUNTER_B_RATIO = "counter_b_ratio"
 CONF_COUNTER_A_OFFSET = "counter_a_offset"
@@ -254,6 +256,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if poll_interval < 60:
                 errors[CONF_POLL_INTERVAL] = "poll_interval_too_short"
 
+            # Get use_device_ratio setting
+            use_device_ratio = bool(user_input.get(CONF_USE_DEVICE_RATIO, False))
+
             # Validate counter ratios (round to 3 decimal places)
             counter_a_ratio = round(
                 float(user_input.get(CONF_COUNTER_A_RATIO, DEFAULT_COUNTER_RATIO)), 3
@@ -262,10 +267,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 float(user_input.get(CONF_COUNTER_B_RATIO, DEFAULT_COUNTER_RATIO)), 3
             )
 
-            if counter_a_ratio <= 0:
-                errors[CONF_COUNTER_A_RATIO] = "ratio_invalid"
-            if counter_b_ratio <= 0:
-                errors[CONF_COUNTER_B_RATIO] = "ratio_invalid"
+            # Only validate manual ratios if not using device ratio
+            if not use_device_ratio:
+                if counter_a_ratio <= 0:
+                    errors[CONF_COUNTER_A_RATIO] = "ratio_invalid"
+                if counter_b_ratio <= 0:
+                    errors[CONF_COUNTER_B_RATIO] = "ratio_invalid"
 
             # Validate counter offsets (round to 3 decimal places to avoid float issues)
             counter_a_offset = round(
@@ -285,6 +292,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     title="",
                     data={
                         CONF_POLL_INTERVAL: poll_interval,
+                        CONF_USE_DEVICE_RATIO: use_device_ratio,
                         CONF_COUNTER_A_RATIO: counter_a_ratio,
                         CONF_COUNTER_B_RATIO: counter_b_ratio,
                         CONF_COUNTER_A_OFFSET: counter_a_offset,
@@ -295,6 +303,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get current values from options or use defaults
         current_poll_interval = self.config_entry.options.get(
             CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL
+        )
+        current_use_device_ratio = self.config_entry.options.get(
+            CONF_USE_DEVICE_RATIO, False
         )
         current_counter_a_ratio = self.config_entry.options.get(
             CONF_COUNTER_A_RATIO, DEFAULT_COUNTER_RATIO
@@ -324,6 +335,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             unit_of_measurement="s",
                         )
                     ),
+                    vol.Optional(
+                        CONF_USE_DEVICE_RATIO, default=current_use_device_ratio
+                    ): BooleanSelector(),
                     vol.Optional(
                         CONF_COUNTER_A_RATIO, default=current_counter_a_ratio
                     ): NumberSelector(

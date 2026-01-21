@@ -22,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Options configuration constants
 CONF_POLL_INTERVAL = "poll_interval"
+CONF_USE_DEVICE_RATIO = "use_device_ratio"
 CONF_COUNTER_A_RATIO = "counter_a_ratio"
 CONF_COUNTER_B_RATIO = "counter_b_ratio"
 CONF_COUNTER_A_OFFSET = "counter_a_offset"
@@ -159,6 +160,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Get options with defaults (ensure correct types)
     poll_interval = int(entry.options.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL))
+    use_device_ratio = bool(entry.options.get(CONF_USE_DEVICE_RATIO, False))
     counter_a_ratio = float(
         entry.options.get(CONF_COUNTER_A_RATIO, DEFAULT_COUNTER_RATIO)
     )
@@ -169,7 +171,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     counter_b_offset = float(entry.options.get(CONF_COUNTER_B_OFFSET, 0.0))
 
     # Create device with custom poll interval
-    device = ATickBTDevice(ble_device, poll_interval=poll_interval)
+    device = ATickBTDevice(
+        ble_device, poll_interval=poll_interval, use_device_ratio=use_device_ratio
+    )
     device.data["counter_a_ratio"] = counter_a_ratio
     device.data["counter_b_ratio"] = counter_b_ratio
     device.data["counter_a_offset"] = counter_a_offset

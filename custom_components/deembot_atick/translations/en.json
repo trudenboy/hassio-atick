@@ -27,11 +27,12 @@
         "step": {
             "init": {
                 "title": "aTick Options",
-                "description": "Configure polling interval, counter ratios and offsets",
+                "description": "Configure polling interval, counter ratios and offsets. If 'Use device ratio' is enabled, ratios will be read from device; otherwise manual values below will be used.",
                 "data": {
                     "poll_interval": "Poll interval (seconds, 60-86400)",
-                    "counter_a_ratio": "Counter A ratio (multiplier)",
-                    "counter_b_ratio": "Counter B ratio (multiplier)",
+                    "use_device_ratio": "Use ratio from device",
+                    "counter_a_ratio": "Counter A ratio (multiplier, if not using device ratio)",
+                    "counter_b_ratio": "Counter B ratio (multiplier, if not using device ratio)",
                     "counter_a_offset": "Counter A offset (m³)",
                     "counter_b_offset": "Counter B offset (m³)"
                 }

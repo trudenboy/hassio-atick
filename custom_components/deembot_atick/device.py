@@ -60,15 +60,20 @@ class ATickBTDevice:
     """aTick Bluetooth Low Energy device handler."""
 
     def __init__(
-        self, ble_device: BLEDevice, poll_interval: int = ACTIVE_POLL_INTERVAL
+        self,
+        ble_device: BLEDevice,
+        poll_interval: int = ACTIVE_POLL_INTERVAL,
+        use_device_ratio: bool = False,
     ) -> None:
         """Initialize aTick BLE device.
 
         Args:
             ble_device: BLE device object
             poll_interval: Active polling interval in seconds (default: 24 hours)
+            use_device_ratio: If True, read ratios from device; if False, use user config
         """
         self._poll_interval = poll_interval
+        self._use_device_ratio = use_device_ratio
         self._last_active_update = -self._poll_interval
         self._ble_device = ble_device
         self.base_unique_id: str = self._ble_device.address
@@ -115,20 +120,21 @@ class ATickBTDevice:
         _LOGGER.debug("Updated BLE device reference for %s", ble_device.address)
 
     async def active_full_update(self) -> None:
-        """Perform full active update of device information and ratios."""
+        """Perform full active update of device information."""
         try:
             await self.device_info_update()
 
-            # Update counter ratios (multipliers) from device
-            try:
-                await self.update_counters_ratio()
-                _LOGGER.debug(
-                    "Updated ratios: A=%s, B=%s",
-                    self.data.get("counter_a_ratio"),
-                    self.data.get("counter_b_ratio"),
-                )
-            except Exception as err:
-                _LOGGER.debug("Could not update ratios: %s", err)
+            # Only read ratios from device if configured to do so
+            if self._use_device_ratio:
+                try:
+                    await self.update_counters_ratio()
+                    _LOGGER.debug(
+                        "Updated ratios from device: A=%s, B=%s",
+                        self.data.get("counter_a_ratio"),
+                        self.data.get("counter_b_ratio"),
+                    )
+                except Exception as err:
+                    _LOGGER.debug("Could not update ratios from device: %s", err)
         finally:
             await self.stop()
 
