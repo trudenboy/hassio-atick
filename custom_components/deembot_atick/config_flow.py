@@ -149,23 +149,35 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._discovered_devices[discovery.address] = discovery
 
             if not self._discovered_devices:
-                return self.async_abort(reason="no_devices_found")
+                # Don't abort - show error and allow retry
+                errors["base"] = "no_devices_found"
 
         current_value = user_input.get(CONF_PIN) if user_input is not None else ""
 
-        data_schema = vol.Schema(
-            {
-                vol.Required(CONF_ADDRESS): vol.In(
-                    {
-                        service_info.address: f"{service_info.name} ({service_info.address})"
-                        for service_info in self._discovered_devices.values()
-                    }
-                ),
-                vol.Required(
-                    CONF_PIN, default=current_value or DEFAULT_PIN_DEVICE
-                ): cv.string,
-            }
-        )
+        # Build device selection options
+        device_options = {
+            service_info.address: f"{service_info.name} ({service_info.address})"
+            for service_info in self._discovered_devices.values()
+        }
+
+        # If no devices found, show form with PIN only to allow retry
+        if not device_options:
+            data_schema = vol.Schema(
+                {
+                    vol.Required(
+                        CONF_PIN, default=current_value or DEFAULT_PIN_DEVICE
+                    ): cv.string,
+                }
+            )
+        else:
+            data_schema = vol.Schema(
+                {
+                    vol.Required(CONF_ADDRESS): vol.In(device_options),
+                    vol.Required(
+                        CONF_PIN, default=current_value or DEFAULT_PIN_DEVICE
+                    ): cv.string,
+                }
+            )
 
         return self.async_show_form(
             step_id="user", data_schema=data_schema, errors=errors

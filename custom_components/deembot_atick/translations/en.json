@@ -10,7 +10,7 @@
             }
         },
         "error": {
-            "no_devices_found": "No device found",
+            "no_devices_found": "No aTick devices found. Make sure the device is powered on and nearby, then try again.",
             "cannot_connect": "Connection timeout",
             "pin_invalid": "Invalid PIN",
             "unknown": "Unknown error",
