@@ -81,7 +81,7 @@ class ATickWaterCounterSensor(BaseEntity, SensorEntity, RestoreEntity):
 
     async def async_added_to_hass(self) -> None:
         """Restore last state when entity is added to Home Assistant."""
-        if self._device.data[self.entity_description.key] is None:
+        if self._device.data.get(self.entity_description.key) is None:
             if last_state := await self.async_get_last_state():
                 try:
                     restored_value_with_ratio = float(last_state.state)

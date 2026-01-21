@@ -229,9 +229,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if poll_interval < 60:
                 errors[CONF_POLL_INTERVAL] = "poll_interval_too_short"
 
-            # Validate counter offsets
-            counter_a_offset = float(user_input.get(CONF_COUNTER_A_OFFSET, 0.0))
-            counter_b_offset = float(user_input.get(CONF_COUNTER_B_OFFSET, 0.0))
+            # Validate counter offsets (round to 3 decimal places to avoid float issues)
+            counter_a_offset = round(float(user_input.get(CONF_COUNTER_A_OFFSET, 0.0)), 3)
+            counter_b_offset = round(float(user_input.get(CONF_COUNTER_B_OFFSET, 0.0)), 3)
 
             if counter_a_offset < 0:
                 errors[CONF_COUNTER_A_OFFSET] = "offset_negative"
