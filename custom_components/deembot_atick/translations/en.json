@@ -15,6 +15,7 @@
             "pin_invalid": "Invalid PIN",
             "unknown": "Unknown error",
             "poll_interval_too_short": "Poll interval must be at least 60 seconds",
+            "ratio_invalid": "Ratio must be greater than 0",
             "offset_negative": "Offset cannot be negative"
         },
         "abort": {
@@ -26,9 +27,11 @@
         "step": {
             "init": {
                 "title": "aTick Options",
-                "description": "Configure polling interval and counter offsets",
+                "description": "Configure polling interval, counter ratios and offsets",
                 "data": {
                     "poll_interval": "Poll interval (seconds, 60-86400)",
+                    "counter_a_ratio": "Counter A ratio (multiplier)",
+                    "counter_b_ratio": "Counter B ratio (multiplier)",
                     "counter_a_offset": "Counter A offset (m³)",
                     "counter_b_offset": "Counter B offset (m³)"
                 }

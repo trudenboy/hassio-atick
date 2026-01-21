@@ -20,13 +20,21 @@ from homeassistant.helpers.selector import (
     NumberSelectorMode,
 )
 
-from .const import ACTIVE_POLL_INTERVAL, DEFAULT_PIN_DEVICE, DOMAIN, UUID_SERVICE_AG
+from .const import (
+    ACTIVE_POLL_INTERVAL,
+    DEFAULT_COUNTER_RATIO,
+    DEFAULT_PIN_DEVICE,
+    DOMAIN,
+    UUID_SERVICE_AG,
+)
 from .device import ATickBTDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 # Options configuration constants
 CONF_POLL_INTERVAL = "poll_interval"
+CONF_COUNTER_A_RATIO = "counter_a_ratio"
+CONF_COUNTER_B_RATIO = "counter_b_ratio"
 CONF_COUNTER_A_OFFSET = "counter_a_offset"
 CONF_COUNTER_B_OFFSET = "counter_b_offset"
 
@@ -246,6 +254,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if poll_interval < 60:
                 errors[CONF_POLL_INTERVAL] = "poll_interval_too_short"
 
+            # Validate counter ratios (round to 3 decimal places)
+            counter_a_ratio = round(
+                float(user_input.get(CONF_COUNTER_A_RATIO, DEFAULT_COUNTER_RATIO)), 3
+            )
+            counter_b_ratio = round(
+                float(user_input.get(CONF_COUNTER_B_RATIO, DEFAULT_COUNTER_RATIO)), 3
+            )
+
+            if counter_a_ratio <= 0:
+                errors[CONF_COUNTER_A_RATIO] = "ratio_invalid"
+            if counter_b_ratio <= 0:
+                errors[CONF_COUNTER_B_RATIO] = "ratio_invalid"
+
             # Validate counter offsets (round to 3 decimal places to avoid float issues)
             counter_a_offset = round(
                 float(user_input.get(CONF_COUNTER_A_OFFSET, 0.0)), 3
@@ -264,6 +285,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     title="",
                     data={
                         CONF_POLL_INTERVAL: poll_interval,
+                        CONF_COUNTER_A_RATIO: counter_a_ratio,
+                        CONF_COUNTER_B_RATIO: counter_b_ratio,
                         CONF_COUNTER_A_OFFSET: counter_a_offset,
                         CONF_COUNTER_B_OFFSET: counter_b_offset,
                     },
@@ -272,6 +295,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Get current values from options or use defaults
         current_poll_interval = self.config_entry.options.get(
             CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL
+        )
+        current_counter_a_ratio = self.config_entry.options.get(
+            CONF_COUNTER_A_RATIO, DEFAULT_COUNTER_RATIO
+        )
+        current_counter_b_ratio = self.config_entry.options.get(
+            CONF_COUNTER_B_RATIO, DEFAULT_COUNTER_RATIO
         )
         current_counter_a_offset = self.config_entry.options.get(
             CONF_COUNTER_A_OFFSET, 0.0
@@ -293,6 +322,26 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             step=60,
                             mode=NumberSelectorMode.BOX,
                             unit_of_measurement="s",
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_COUNTER_A_RATIO, default=current_counter_a_ratio
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0.001,
+                            max=1000,
+                            step=0.001,
+                            mode=NumberSelectorMode.BOX,
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_COUNTER_B_RATIO, default=current_counter_b_ratio
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0.001,
+                            max=1000,
+                            step=0.001,
+                            mode=NumberSelectorMode.BOX,
                         )
                     ),
                     vol.Optional(

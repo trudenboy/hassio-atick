@@ -20,6 +20,7 @@ from .const import (
     BLE_BASE_BACKOFF_DELAY,
     BLE_LOCK_TIMEOUT,
     BLE_MAX_CONNECTION_FAILURES,
+    DEFAULT_COUNTER_RATIO,
     DEFAULT_PIN_DEVICE,
     UUID_AG_ATTR_RATIOS,
     UUID_AG_ATTR_VALUES,
@@ -84,8 +85,8 @@ class ATickBTDevice:
             "firmware_version": None,
             "counter_a_value": None,
             "counter_b_value": None,
-            "counter_a_ratio": 0.01,
-            "counter_b_ratio": 0.01,
+            "counter_a_ratio": DEFAULT_COUNTER_RATIO,
+            "counter_b_ratio": DEFAULT_COUNTER_RATIO,
             "counter_a_offset": 0.0,
             "counter_b_offset": 0.0,
         }

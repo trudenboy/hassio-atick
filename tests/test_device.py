@@ -17,8 +17,8 @@ def test_device_initialization(mock_ble_device: BLEDevice) -> None:
     assert device.name == "aTick_Test"
     assert device.data["counter_a_value"] is None
     assert device.data["counter_b_value"] is None
-    assert device.data["counter_a_ratio"] == 0.01
-    assert device.data["counter_b_ratio"] == 0.01
+    assert device.data["counter_a_ratio"] == 1.0
+    assert device.data["counter_b_ratio"] == 1.0
     assert device.data["counter_a_offset"] == 0.0
     assert device.data["counter_b_offset"] == 0.0
 

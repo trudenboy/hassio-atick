@@ -38,6 +38,8 @@ def mock_config_entry_options() -> dict:
     """Return mock config entry options."""
     return {
         "poll_interval": 3600,
+        "counter_a_ratio": 1.0,
+        "counter_b_ratio": 1.0,
         "counter_a_offset": 0.0,
         "counter_b_offset": 0.0,
     }
