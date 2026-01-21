@@ -12,6 +12,9 @@ from homeassistant.components.bluetooth import (BluetoothServiceInfoBleak,
                                                 async_discovered_service_info)
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (NumberSelector,
+                                            NumberSelectorConfig,
+                                            NumberSelectorMode)
 
 from .const import (ACTIVE_POLL_INTERVAL, DEFAULT_PIN_DEVICE, DOMAIN,
                     UUID_SERVICE_AG)
@@ -262,13 +265,37 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_POLL_INTERVAL, default=current_poll_interval
-                    ): vol.All(vol.Coerce(int), vol.Range(min=60, max=86400)),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=60,
+                            max=86400,
+                            step=60,
+                            mode=NumberSelectorMode.BOX,
+                            unit_of_measurement="s",
+                        )
+                    ),
                     vol.Optional(
                         CONF_COUNTER_A_OFFSET, default=current_counter_a_offset
-                    ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0,
+                            max=999999,
+                            step=0.001,
+                            mode=NumberSelectorMode.BOX,
+                            unit_of_measurement="m³",
+                        )
+                    ),
                     vol.Optional(
                         CONF_COUNTER_B_OFFSET, default=current_counter_b_offset
-                    ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0,
+                            max=999999,
+                            step=0.001,
+                            mode=NumberSelectorMode.BOX,
+                            unit_of_measurement="m³",
+                        )
+                    ),
                 }
             ),
             errors=errors,
