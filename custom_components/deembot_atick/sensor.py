@@ -33,7 +33,7 @@ ENTITIES: list[SensorEntityDescription] = [
         name="Counter A",
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
     SensorEntityDescription(
@@ -42,7 +42,7 @@ ENTITIES: list[SensorEntityDescription] = [
         name="Counter B",
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
 ]
