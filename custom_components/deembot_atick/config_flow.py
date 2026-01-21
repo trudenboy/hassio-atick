@@ -224,14 +224,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            # Validate poll interval
-            poll_interval = user_input.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL)
+            # Validate and convert poll interval (NumberSelector returns float)
+            poll_interval = int(user_input.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL))
             if poll_interval < 60:
                 errors[CONF_POLL_INTERVAL] = "poll_interval_too_short"
 
             # Validate counter offsets
-            counter_a_offset = user_input.get(CONF_COUNTER_A_OFFSET, 0.0)
-            counter_b_offset = user_input.get(CONF_COUNTER_B_OFFSET, 0.0)
+            counter_a_offset = float(user_input.get(CONF_COUNTER_A_OFFSET, 0.0))
+            counter_b_offset = float(user_input.get(CONF_COUNTER_B_OFFSET, 0.0))
 
             if counter_a_offset < 0:
                 errors[CONF_COUNTER_A_OFFSET] = "offset_negative"

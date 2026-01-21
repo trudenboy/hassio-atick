@@ -155,10 +155,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not ble_device:
         raise ConfigEntryNotReady(f"Could not find BT Device with address {address}")
 
-    # Get options with defaults
-    poll_interval = entry.options.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL)
-    counter_a_offset = entry.options.get(CONF_COUNTER_A_OFFSET, 0.0)
-    counter_b_offset = entry.options.get(CONF_COUNTER_B_OFFSET, 0.0)
+    # Get options with defaults (ensure correct types)
+    poll_interval = int(entry.options.get(CONF_POLL_INTERVAL, ACTIVE_POLL_INTERVAL))
+    counter_a_offset = float(entry.options.get(CONF_COUNTER_A_OFFSET, 0.0))
+    counter_b_offset = float(entry.options.get(CONF_COUNTER_B_OFFSET, 0.0))
 
     # Create device with custom poll interval
     device = ATickBTDevice(ble_device, poll_interval=poll_interval)
