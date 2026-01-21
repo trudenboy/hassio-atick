@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.deembot_atick.config_flow import is_atick_device
+from custom_components.deembot_atick.config_flow import (
+    OptionsFlowHandler,
+    is_atick_device,
+)
 from custom_components.deembot_atick.const import DOMAIN, UUID_SERVICE_AG
 
 
@@ -53,10 +55,10 @@ def test_is_atick_device_no_name() -> None:
 class TestOptionsFlow:
     """Test options flow for aTick integration."""
 
-    async def test_options_flow_init(
-        self, hass, mock_config_entry_data, mock_config_entry_options
-    ):
-        """Test the initial options form."""
+    def _create_options_flow(
+        self, mock_config_entry_data, mock_config_entry_options
+    ) -> OptionsFlowHandler:
+        """Create an options flow with a mock config entry."""
         entry = config_entries.ConfigEntry(
             version=1,
             minor_version=0,
@@ -68,10 +70,15 @@ class TestOptionsFlow:
             unique_id="AA:BB:CC:DD:EE:FF",
         )
 
-        from custom_components.deembot_atick.config_flow import \
-            OptionsFlowHandler
+        return OptionsFlowHandler(entry)
 
-        flow = OptionsFlowHandler(entry)
+    async def test_options_flow_init(
+        self, hass, mock_config_entry_data, mock_config_entry_options
+    ):
+        """Test the initial options form."""
+        flow = self._create_options_flow(
+            mock_config_entry_data, mock_config_entry_options
+        )
         result = await flow.async_step_init()
 
         assert result["type"] == FlowResultType.FORM
@@ -81,21 +88,9 @@ class TestOptionsFlow:
         self, hass, mock_config_entry_data, mock_config_entry_options
     ):
         """Test updating options."""
-        entry = config_entries.ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test aTick",
-            data=mock_config_entry_data,
-            options=mock_config_entry_options,
-            source=config_entries.SOURCE_USER,
-            unique_id="AA:BB:CC:DD:EE:FF",
+        flow = self._create_options_flow(
+            mock_config_entry_data, mock_config_entry_options
         )
-
-        from custom_components.deembot_atick.config_flow import \
-            OptionsFlowHandler
-
-        flow = OptionsFlowHandler(entry)
 
         result = await flow.async_step_init(
             user_input={
@@ -114,21 +109,9 @@ class TestOptionsFlow:
         self, hass, mock_config_entry_data, mock_config_entry_options
     ):
         """Test validation of poll interval (too short)."""
-        entry = config_entries.ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test aTick",
-            data=mock_config_entry_data,
-            options=mock_config_entry_options,
-            source=config_entries.SOURCE_USER,
-            unique_id="AA:BB:CC:DD:EE:FF",
+        flow = self._create_options_flow(
+            mock_config_entry_data, mock_config_entry_options
         )
-
-        from custom_components.deembot_atick.config_flow import \
-            OptionsFlowHandler
-
-        flow = OptionsFlowHandler(entry)
 
         result = await flow.async_step_init(
             user_input={
@@ -145,21 +128,9 @@ class TestOptionsFlow:
         self, hass, mock_config_entry_data, mock_config_entry_options
     ):
         """Test validation of negative offset."""
-        entry = config_entries.ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test aTick",
-            data=mock_config_entry_data,
-            options=mock_config_entry_options,
-            source=config_entries.SOURCE_USER,
-            unique_id="AA:BB:CC:DD:EE:FF",
+        flow = self._create_options_flow(
+            mock_config_entry_data, mock_config_entry_options
         )
-
-        from custom_components.deembot_atick.config_flow import \
-            OptionsFlowHandler
-
-        flow = OptionsFlowHandler(entry)
 
         result = await flow.async_step_init(
             user_input={
