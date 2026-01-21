@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.bluetooth.passive_update_coordinator import \
-    PassiveBluetoothCoordinatorEntity
+from homeassistant.components.bluetooth.passive_update_coordinator import (
+    PassiveBluetoothCoordinatorEntity,
+)
 from homeassistant.helpers import device_registry as dr
 
 from . import ATickDataUpdateCoordinator

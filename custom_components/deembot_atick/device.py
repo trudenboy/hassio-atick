@@ -13,8 +13,7 @@ from typing import TypedDict
 
 from bleak import AdvertisementData, BleakClient, BLEDevice
 from bleak.exc import BleakError
-from bleak_retry_connector import (BleakClientWithServiceCache,
-                                   establish_connection)
+from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
 from .const import (
     ACTIVE_POLL_INTERVAL,

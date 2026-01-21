@@ -8,16 +8,19 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from bleak import BleakError
 from homeassistant import config_entries
-from homeassistant.components.bluetooth import (BluetoothServiceInfoBleak,
-                                                async_discovered_service_info)
+from homeassistant.components.bluetooth import (
+    BluetoothServiceInfoBleak,
+    async_discovered_service_info,
+)
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.selector import (NumberSelector,
-                                            NumberSelectorConfig,
-                                            NumberSelectorMode)
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+)
 
-from .const import (ACTIVE_POLL_INTERVAL, DEFAULT_PIN_DEVICE, DOMAIN,
-                    UUID_SERVICE_AG)
+from .const import ACTIVE_POLL_INTERVAL, DEFAULT_PIN_DEVICE, DOMAIN, UUID_SERVICE_AG
 from .device import ATickBTDevice
 
 _LOGGER = logging.getLogger(__name__)

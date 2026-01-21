@@ -4,8 +4,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.components import bluetooth
-from homeassistant.components.bluetooth.active_update_coordinator import \
-    ActiveBluetoothDataUpdateCoordinator
+from homeassistant.components.bluetooth.active_update_coordinator import (
+    ActiveBluetoothDataUpdateCoordinator,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PIN
 from homeassistant.core import CoreState, HomeAssistant, callback
