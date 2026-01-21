@@ -8,19 +8,28 @@ import dataclasses
 import logging
 import struct
 import time
-from contextlib import AsyncExitStack
 from textwrap import wrap
 from typing import TypedDict
 
 from bleak import AdvertisementData, BleakClient, BLEDevice
 from bleak.exc import BleakError
+from bleak_retry_connector import (BleakClientWithServiceCache,
+                                   establish_connection)
 
-from .const import (ACTIVE_POLL_INTERVAL, BLE_BASE_BACKOFF_DELAY,
-                    BLE_CONNECTION_TIMEOUT, BLE_LOCK_TIMEOUT,
-                    BLE_MAX_CONNECTION_FAILURES, DEFAULT_PIN_DEVICE,
-                    UUID_AG_ATTR_RATIOS, UUID_AG_ATTR_VALUES,
-                    UUID_ATTR_MANUFACTURER, UUID_ATTR_MODEL,
-                    UUID_ATTR_VERSION_FIRMWARE, UUID_SERVICE_AG, CounterType)
+from .const import (
+    ACTIVE_POLL_INTERVAL,
+    BLE_BASE_BACKOFF_DELAY,
+    BLE_LOCK_TIMEOUT,
+    BLE_MAX_CONNECTION_FAILURES,
+    DEFAULT_PIN_DEVICE,
+    UUID_AG_ATTR_RATIOS,
+    UUID_AG_ATTR_VALUES,
+    UUID_ATTR_MANUFACTURER,
+    UUID_ATTR_MODEL,
+    UUID_ATTR_VERSION_FIRMWARE,
+    UUID_SERVICE_AG,
+    CounterType,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +73,6 @@ class ATickBTDevice:
         self._ble_device = ble_device
         self.base_unique_id: str = self._ble_device.address
         self._client: BleakClient | None = None
-        self._client_stack = AsyncExitStack()
         self._lock = asyncio.Lock()
 
         # Exponential backoff state
@@ -200,9 +208,8 @@ class ATickBTDevice:
         self._client = None
 
     async def cleanup(self) -> None:
-        """Cleanup all resources including AsyncExitStack."""
+        """Cleanup all resources."""
         await self.stop()
-        await self._client_stack.aclose()
 
     @property
     def connected(self) -> bool:
@@ -238,7 +245,7 @@ class ATickBTDevice:
         self._last_connection_failure = time.monotonic()
 
     async def get_client(self) -> BleakClient:
-        """Get or create BLE client with exponential backoff."""
+        """Get or create BLE client using bleak-retry-connector."""
         self._check_backoff()
 
         try:
@@ -248,10 +255,11 @@ class ATickBTDevice:
                         _LOGGER.debug("Connecting to %s", self._ble_device.address)
 
                         try:
-                            self._client = await self._client_stack.enter_async_context(
-                                BleakClient(
-                                    self._ble_device, timeout=BLE_CONNECTION_TIMEOUT
-                                )
+                            self._client = await establish_connection(
+                                BleakClientWithServiceCache,
+                                self._ble_device,
+                                self._ble_device.name or self._ble_device.address,
+                                max_attempts=3,
                             )
                             self._reset_backoff()
                             _LOGGER.debug("Connected successfully")
