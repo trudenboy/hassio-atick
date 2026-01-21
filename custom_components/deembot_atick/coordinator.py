@@ -72,6 +72,9 @@ class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         """Poll the device."""
 
         try:
+            # Update BLE device reference to avoid stale device errors
+            # BlueZ can invalidate old references when scanning stops
+            self.device.update_ble_device(service_info.device)
             await self.device.active_full_update()
         except Exception as ex:
             raise UpdateFailed(str(ex)) from ex

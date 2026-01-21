@@ -256,3 +256,23 @@ def test_backoff_reset(mock_ble_device: BLEDevice) -> None:
 
     # Should not raise
     device._check_backoff()
+
+
+def test_update_ble_device(mock_ble_device: BLEDevice) -> None:
+    """Test updating BLE device reference."""
+    from unittest.mock import MagicMock
+
+    device = ATickBTDevice(mock_ble_device)
+
+    assert device._ble_device.address == "AA:BB:CC:DD:EE:FF"
+
+    # Create new mock BLE device with different address
+    new_ble_device = MagicMock(spec=BLEDevice)
+    new_ble_device.address = "11:22:33:44:55:66"
+    new_ble_device.name = "aTick_New"
+
+    # Update BLE device reference
+    device.update_ble_device(new_ble_device)
+
+    assert device._ble_device.address == "11:22:33:44:55:66"
+    assert device._ble_device.name == "aTick_New"

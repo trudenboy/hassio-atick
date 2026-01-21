@@ -9,10 +9,8 @@ from homeassistant import config_entries
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.deembot_atick.config_flow import (
-    OptionsFlowHandler,
-    is_atick_device,
-)
+from custom_components.deembot_atick.config_flow import (OptionsFlowHandler,
+                                                         is_atick_device)
 from custom_components.deembot_atick.const import DOMAIN, UUID_SERVICE_AG
 
 

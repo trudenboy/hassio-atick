@@ -93,6 +93,19 @@ class ATickBTDevice:
 
         return (time.monotonic() - self._last_active_update) > self._poll_interval
 
+    def update_ble_device(self, ble_device: BLEDevice) -> None:
+        """Update the BLE device reference.
+
+        This is needed because BlueZ can invalidate old device references
+        when scanning stops and restarts. Updating ensures we always have
+        a fresh reference before connecting.
+
+        Args:
+            ble_device: Fresh BLEDevice reference from Home Assistant
+        """
+        self._ble_device = ble_device
+        _LOGGER.debug("Updated BLE device reference for %s", ble_device.address)
+
     async def active_full_update(self) -> None:
         """Perform full active update of device information and ratios."""
         try:
