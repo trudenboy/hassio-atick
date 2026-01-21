@@ -1,4 +1,5 @@
 """Common fixtures for aTick integration tests."""
+
 from __future__ import annotations
 
 from collections.abc import Generator
@@ -6,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
-
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
 
 

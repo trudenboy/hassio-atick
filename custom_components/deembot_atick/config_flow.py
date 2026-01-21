@@ -3,16 +3,18 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Any
+
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from bleak import BleakError
-
 from homeassistant import config_entries
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak, async_discovered_service_info
+from homeassistant.components.bluetooth import (BluetoothServiceInfoBleak,
+                                                async_discovered_service_info)
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
 from homeassistant.data_entry_flow import FlowResult
-import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, DEFAULT_PIN_DEVICE, UUID_SERVICE_AG, ACTIVE_POLL_INTERVAL
+from .const import (ACTIVE_POLL_INTERVAL, DEFAULT_PIN_DEVICE, DOMAIN,
+                    UUID_SERVICE_AG)
 from .device import ATickBTDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,11 +32,13 @@ def is_atick_device(discovery_info: BluetoothServiceInfoBleak) -> bool:
     original and renamed devices.
     """
     # Check by service UUID (works even if device is renamed)
-    if UUID_SERVICE_AG.lower() in [uuid.lower() for uuid in discovery_info.service_uuids]:
+    if UUID_SERVICE_AG.lower() in [
+        uuid.lower() for uuid in discovery_info.service_uuids
+    ]:
         return True
 
     # Fallback: check by name prefix for devices without service UUID in advertisement
-    if discovery_info.name and discovery_info.name.startswith('aTick'):
+    if discovery_info.name and discovery_info.name.startswith("aTick"):
         return True
 
     return False
@@ -49,11 +53,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._discovered_devices: dict[str, BluetoothServiceInfoBleak] = {}
 
     @staticmethod
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
         """Get the options flow for this handler."""
         return OptionsFlowHandler(config_entry)
 
-    async def async_step_bluetooth(self, discovery_info: BluetoothServiceInfoBleak) -> FlowResult:
+    async def async_step_bluetooth(
+        self, discovery_info: BluetoothServiceInfoBleak
+    ) -> FlowResult:
         """Handle the bluetooth discovery step."""
 
         await self.async_set_unique_id(discovery_info.address)
@@ -66,12 +74,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self.context["title_placeholders"] = {
             "name": discovery_info.name,
-            "address": discovery_info.address
+            "address": discovery_info.address,
         }
 
         return await self.async_step_user()
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle the user step to pick discovered device."""
         errors: dict[str, str] = {}
 
@@ -84,7 +94,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "pin_invalid"
 
             if errors.get("base") is None:
-                await self.async_set_unique_id(discovery_info.address, raise_on_progress=False)
+                await self.async_set_unique_id(
+                    discovery_info.address, raise_on_progress=False
+                )
                 self._abort_if_unique_id_configured()
 
                 name = discovery_info.name
@@ -109,8 +121,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "model": device.model,
                                 "manufacturer": device.manufacturer,
                                 "firmware_version": device.firmware_version,
-                            }
-                        }
+                            },
+                        },
                     )
 
         if errors.get("base") is None:
@@ -121,7 +133,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 current_addresses = self._async_current_ids()
 
                 for discovery in async_discovered_service_info(self.hass):
-                    if discovery.address in current_addresses or discovery.address in self._discovered_devices:
+                    if (
+                        discovery.address in current_addresses
+                        or discovery.address in self._discovered_devices
+                    ):
                         continue
 
                     if is_atick_device(discovery):
@@ -132,21 +147,27 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         current_value = user_input.get(CONF_PIN) if user_input is not None else ""
 
-        data_schema = vol.Schema({
-            vol.Required(CONF_ADDRESS): vol.In({
-                service_info.address: f"{service_info.name} ({service_info.address})"
-                for service_info in self._discovered_devices.values()
-            }),
-            vol.Required(CONF_PIN, default=current_value or DEFAULT_PIN_DEVICE): cv.string,
-        })
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=data_schema,
-            errors=errors
+        data_schema = vol.Schema(
+            {
+                vol.Required(CONF_ADDRESS): vol.In(
+                    {
+                        service_info.address: f"{service_info.name} ({service_info.address})"
+                        for service_info in self._discovered_devices.values()
+                    }
+                ),
+                vol.Required(
+                    CONF_PIN, default=current_value or DEFAULT_PIN_DEVICE
+                ): cv.string,
+            }
         )
 
-    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_form(
+            step_id="user", data_schema=data_schema, errors=errors
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         errors: dict[str, str] = {}
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
 
@@ -159,9 +180,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if errors.get("base") is None:
                 self.hass.config_entries.async_update_entry(
                     entry,
-                    data=entry.data | {
+                    data=entry.data
+                    | {
                         CONF_PIN: pin,
-                    }
+                    },
                 )
 
                 if await self.hass.config_entries.async_reload(entry.entry_id):
@@ -171,10 +193,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema({
-                vol.Required(CONF_PIN, default=current_value): cv.string,
-            }),
-            errors=errors
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PIN, default=current_value): cv.string,
+                }
+            ),
+            errors=errors,
         )
 
 
@@ -185,7 +209,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Manage the options."""
         errors: dict[str, str] = {}
 
@@ -211,7 +237,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_POLL_INTERVAL: poll_interval,
                         CONF_COUNTER_A_OFFSET: counter_a_offset,
                         CONF_COUNTER_B_OFFSET: counter_b_offset,
-                    }
+                    },
                 )
 
         # Get current values from options or use defaults
@@ -227,19 +253,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Required(
-                    CONF_POLL_INTERVAL,
-                    default=current_poll_interval
-                ): vol.All(vol.Coerce(int), vol.Range(min=60, max=86400)),
-                vol.Optional(
-                    CONF_COUNTER_A_OFFSET,
-                    default=current_counter_a_offset
-                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
-                vol.Optional(
-                    CONF_COUNTER_B_OFFSET,
-                    default=current_counter_b_offset
-                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
-            }),
-            errors=errors
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_POLL_INTERVAL, default=current_poll_interval
+                    ): vol.All(vol.Coerce(int), vol.Range(min=60, max=86400)),
+                    vol.Optional(
+                        CONF_COUNTER_A_OFFSET, default=current_counter_a_offset
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                    vol.Optional(
+                        CONF_COUNTER_B_OFFSET, default=current_counter_b_offset
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                }
+            ),
+            errors=errors,
         )

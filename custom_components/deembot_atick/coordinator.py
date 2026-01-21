@@ -4,9 +4,8 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.components import bluetooth
-from homeassistant.components.bluetooth.active_update_coordinator import (
-    ActiveBluetoothDataUpdateCoordinator,
-)
+from homeassistant.components.bluetooth.active_update_coordinator import \
+    ActiveBluetoothDataUpdateCoordinator
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PIN
 from homeassistant.core import CoreState, HomeAssistant, callback
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
     def __init__(
         self,
@@ -27,7 +27,7 @@ class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         logger: logging.Logger,
         ble_device: BLEDevice,
         device: ATickBTDevice,
-        connectable: bool
+        connectable: bool,
     ) -> None:
         super().__init__(
             hass=hass,
@@ -53,7 +53,11 @@ class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         is_need = (
             self.hass.state is CoreState.running
             and self.device.active_poll_needed(seconds_since_last_poll)
-            and bool(bluetooth.async_ble_device_from_address(self.hass, service_info.device.address, True))
+            and bool(
+                bluetooth.async_ble_device_from_address(
+                    self.hass, service_info.device.address, True
+                )
+            )
         )
 
         _LOGGER.debug("needs_poll: %s", is_need)
@@ -62,7 +66,9 @@ class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
         # and we actually have a way to connect to the device
         return is_need
 
-    async def _async_update(self, service_info: bluetooth.BluetoothServiceInfoBleak) -> None:
+    async def _async_update(
+        self, service_info: bluetooth.BluetoothServiceInfoBleak
+    ) -> None:
         """Poll the device."""
 
         try:
@@ -88,12 +94,18 @@ class ATickDataUpdateCoordinator(ActiveBluetoothDataUpdateCoordinator[None]):
     ) -> None:
         """Handle a Bluetooth event."""
 
-        parsed_adv = self.device.parse_advertisement_data(self._config[CONF_PIN], service_info.advertisement)
+        parsed_adv = self.device.parse_advertisement_data(
+            self._config[CONF_PIN], service_info.advertisement
+        )
 
-        _LOGGER.debug("%s: advertisement raw data: %s", self.address, service_info.advertisement)
+        _LOGGER.debug(
+            "%s: advertisement raw data: %s", self.address, service_info.advertisement
+        )
         _LOGGER.debug("%s: advertisement data: %s", self.address, parsed_adv)
 
-        if parsed_adv is not None and (self.device.is_advertisement_changed(parsed_adv) or self._was_unavailable):
+        if parsed_adv is not None and (
+            self.device.is_advertisement_changed(parsed_adv) or self._was_unavailable
+        ):
             self._was_unavailable = False
             self.device.update_from_advertisement(parsed_adv)
 

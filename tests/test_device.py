@@ -1,9 +1,11 @@
 """Tests for aTick device module."""
+
 from __future__ import annotations
 
 import pytest
 from bleak.backends.device import BLEDevice
 
+from custom_components.deembot_atick.const import CounterType
 from custom_components.deembot_atick.device import ATickBTDevice
 
 
@@ -50,20 +52,20 @@ def test_is_encrypted_with_encrypted_data() -> None:
 
 def test_truncate_float() -> None:
     """Test float truncation."""
-    assert ATickBTDevice.truncate_float(123.456789, 2) == 123.45
-    assert ATickBTDevice.truncate_float(0.999, 2) == 0.99
-    assert ATickBTDevice.truncate_float(100.001, 3) == 100.001
+    assert ATickBTDevice._truncate_float(123.456789, 2) == 123.45
+    assert ATickBTDevice._truncate_float(0.999, 2) == 0.99
+    assert ATickBTDevice._truncate_float(100.001, 3) == 100.001
 
 
-def test_midLittleEndian() -> None:
+def test_mid_little_endian() -> None:
     """Test middle little endian byte order conversion."""
     # Test conversion: bytes [0,1,2,3] -> [2,3,0,1]
-    result = ATickBTDevice.midLittleEndian("00112233")
+    result = ATickBTDevice._mid_little_endian("00112233")
     assert result == "22330011"
 
 
-def test_get_counter_value_with_ratio(mock_ble_device: BLEDevice) -> None:
-    """Test getting counter value with ratio applied."""
+def test_get_counter_value_with_ratio_string_key(mock_ble_device: BLEDevice) -> None:
+    """Test getting counter value with ratio applied using string key."""
     device = ATickBTDevice(mock_ble_device)
 
     # Set raw counter value
@@ -73,6 +75,20 @@ def test_get_counter_value_with_ratio(mock_ble_device: BLEDevice) -> None:
 
     # Should return 100.0 * 0.01 + 0.0 = 1.0
     result = device.get_counter_value_with_ratio("counter_a_value")
+    assert result == 1.0
+
+
+def test_get_counter_value_with_ratio_enum(mock_ble_device: BLEDevice) -> None:
+    """Test getting counter value with ratio applied using CounterType enum."""
+    device = ATickBTDevice(mock_ble_device)
+
+    # Set raw counter value
+    device.data["counter_a_value"] = 100.0
+    device.data["counter_a_ratio"] = 0.01
+    device.data["counter_a_offset"] = 0.0
+
+    # Should return 100.0 * 0.01 + 0.0 = 1.0
+    result = device.get_counter_value_with_ratio(CounterType.A)
     assert result == 1.0
 
 
@@ -104,7 +120,9 @@ def test_parse_adv_values_counters_with_short_data(mock_ble_device: BLEDevice) -
     device = ATickBTDevice(mock_ble_device)
 
     short_data = bytes([0x00, 0x01])
-    result = device.parseAdvValuesCounters(short_data, "123456", "AA:BB:CC:DD:EE:FF")
+    result = device._parse_adv_values_counters(
+        short_data, "123456", "AA:BB:CC:DD:EE:FF"
+    )
 
     assert result == [0.0, 0.0]
 
@@ -113,7 +131,7 @@ def test_parse_adv_values_counters_with_none_data(mock_ble_device: BLEDevice) ->
     """Test parsing advertisement with None data."""
     device = ATickBTDevice(mock_ble_device)
 
-    result = device.parseAdvValuesCounters(None, "123456", "AA:BB:CC:DD:EE:FF")
+    result = device._parse_adv_values_counters(None, "123456", "AA:BB:CC:DD:EE:FF")
 
     assert result == [0.0, 0.0]
 
@@ -140,3 +158,101 @@ def test_active_poll_needed_after_old_poll(mock_ble_device: BLEDevice) -> None:
 
     # Old poll (2 hours ago)
     assert device.active_poll_needed(7200.0) is True
+
+
+def test_counter_type_enum() -> None:
+    """Test CounterType enum properties."""
+    assert CounterType.A.value_key == "counter_a_value"
+    assert CounterType.A.ratio_key == "counter_a_ratio"
+    assert CounterType.A.offset_key == "counter_a_offset"
+
+    assert CounterType.B.value_key == "counter_b_value"
+    assert CounterType.B.ratio_key == "counter_b_ratio"
+    assert CounterType.B.offset_key == "counter_b_offset"
+
+
+def test_counter_type_from_entity_id() -> None:
+    """Test CounterType.from_entity_id method."""
+    assert CounterType.from_entity_id("sensor.atick_123_counter_a") == CounterType.A
+    assert CounterType.from_entity_id("sensor.atick_123_counter_b") == CounterType.B
+    assert CounterType.from_entity_id("sensor.atick_123_rssi") is None
+
+
+@pytest.mark.asyncio
+async def test_set_counter_value(mock_ble_device: BLEDevice) -> None:
+    """Test setting counter value."""
+    device = ATickBTDevice(mock_ble_device)
+
+    # Set initial ratios
+    device.data["counter_a_ratio"] = 0.01
+    device.data["counter_a_offset"] = 0.0
+
+    # Set displayed value of 1.5 m³
+    await device.set_counter_value(CounterType.A, 1.5)
+
+    # Raw value should be 1.5 / 0.01 = 150.0
+    assert device.data["counter_a_value"] == 150.0
+
+
+@pytest.mark.asyncio
+async def test_set_counter_value_with_offset(mock_ble_device: BLEDevice) -> None:
+    """Test setting counter value with offset."""
+    device = ATickBTDevice(mock_ble_device)
+
+    # Set initial ratios and offset
+    device.data["counter_b_ratio"] = 0.01
+    device.data["counter_b_offset"] = 10.0
+
+    # Set displayed value of 15.0 m³
+    await device.set_counter_value(CounterType.B, 15.0)
+
+    # Raw value should be (15.0 - 10.0) / 0.01 = 500.0
+    assert device.data["counter_b_value"] == 500.0
+
+
+def test_backoff_initial_state(mock_ble_device: BLEDevice) -> None:
+    """Test that backoff is not active initially."""
+    device = ATickBTDevice(mock_ble_device)
+
+    assert device._connection_failures == 0
+    assert device._last_connection_failure == 0.0
+
+    # Should not raise
+    device._check_backoff()
+
+
+def test_backoff_after_failures(mock_ble_device: BLEDevice) -> None:
+    """Test that backoff activates after multiple failures."""
+    device = ATickBTDevice(mock_ble_device)
+
+    # Simulate 5 failures
+    for _ in range(5):
+        device._record_failure()
+
+    assert device._connection_failures == 5
+
+    # Should raise BleakError due to backoff
+    from bleak.exc import BleakError
+
+    with pytest.raises(BleakError, match="Connection backoff active"):
+        device._check_backoff()
+
+
+def test_backoff_reset(mock_ble_device: BLEDevice) -> None:
+    """Test that backoff resets after successful connection."""
+    device = ATickBTDevice(mock_ble_device)
+
+    # Simulate failures
+    for _ in range(5):
+        device._record_failure()
+
+    assert device._connection_failures == 5
+
+    # Reset backoff
+    device._reset_backoff()
+
+    assert device._connection_failures == 0
+    assert device._last_connection_failure == 0.0
+
+    # Should not raise
+    device._check_backoff()

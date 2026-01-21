@@ -1,4 +1,5 @@
 """Tests for aTick config flow."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -67,14 +68,14 @@ class TestOptionsFlow:
             unique_id="AA:BB:CC:DD:EE:FF",
         )
 
-        from custom_components.deembot_atick.config_flow import OptionsFlowHandler
+        from custom_components.deembot_atick.config_flow import \
+            OptionsFlowHandler
 
         flow = OptionsFlowHandler(entry)
         result = await flow.async_step_init()
 
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "init"
-
 
     async def test_options_flow_update(
         self, hass, mock_config_entry_data, mock_config_entry_options
@@ -91,7 +92,8 @@ class TestOptionsFlow:
             unique_id="AA:BB:CC:DD:EE:FF",
         )
 
-        from custom_components.deembot_atick.config_flow import OptionsFlowHandler
+        from custom_components.deembot_atick.config_flow import \
+            OptionsFlowHandler
 
         flow = OptionsFlowHandler(entry)
 
@@ -108,7 +110,6 @@ class TestOptionsFlow:
         assert result["data"]["counter_a_offset"] == 10.5
         assert result["data"]["counter_b_offset"] == 20.3
 
-
     async def test_options_flow_invalid_poll_interval(
         self, hass, mock_config_entry_data, mock_config_entry_options
     ):
@@ -124,7 +125,8 @@ class TestOptionsFlow:
             unique_id="AA:BB:CC:DD:EE:FF",
         )
 
-        from custom_components.deembot_atick.config_flow import OptionsFlowHandler
+        from custom_components.deembot_atick.config_flow import \
+            OptionsFlowHandler
 
         flow = OptionsFlowHandler(entry)
 
@@ -138,7 +140,6 @@ class TestOptionsFlow:
 
         assert result["type"] == FlowResultType.FORM
         assert "poll_interval_too_short" in result["errors"].values()
-
 
     async def test_options_flow_negative_offset(
         self, hass, mock_config_entry_data, mock_config_entry_options
@@ -155,7 +156,8 @@ class TestOptionsFlow:
             unique_id="AA:BB:CC:DD:EE:FF",
         )
 
-        from custom_components.deembot_atick.config_flow import OptionsFlowHandler
+        from custom_components.deembot_atick.config_flow import \
+            OptionsFlowHandler
 
         flow = OptionsFlowHandler(entry)
 
