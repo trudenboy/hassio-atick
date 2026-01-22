@@ -4,7 +4,7 @@
 [![Validate](https://github.com/trudenboy/hassio-atick/actions/workflows/validate.yml/badge.svg)](https://github.com/trudenboy/hassio-atick/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-Интеграция для работы с устройством [aTick](https://deembot.com/atick/index.ru.html) от компании Deembot - счетчиком воды с Bluetooth Low Energy (BLE).
+Интеграция для работы с устройством [aTick] - счетчиком воды с Bluetooth Low Energy (BLE).
 
 ## Возможности
 
