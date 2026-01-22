@@ -8,6 +8,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from bleak.backends.device import BLEDevice
 from homeassistant.const import CONF_ADDRESS, CONF_PIN
+from homeassistant.core import HomeAssistant
+
+
+@pytest.fixture
+def hass() -> MagicMock:
+    """Return a mock Home Assistant instance."""
+    mock_hass = MagicMock(spec=HomeAssistant)
+    mock_hass.data = {}
+    return mock_hass
 
 
 @pytest.fixture

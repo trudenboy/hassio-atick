@@ -33,8 +33,8 @@
                     "use_device_ratio": "Use ratio from device",
                     "counter_a_ratio": "Counter A ratio (multiplier, if not using device ratio)",
                     "counter_b_ratio": "Counter B ratio (multiplier, if not using device ratio)",
-                    "counter_a_offset": "Counter A offset (m³)",
-                    "counter_b_offset": "Counter B offset (m³)"
+                    "counter_a_offset": "Counter A offset (m\u00b3)",
+                    "counter_b_offset": "Counter B offset (m\u00b3)"
                 }
             }
         }
@@ -50,7 +50,7 @@
                 },
                 "value": {
                     "name": "Value",
-                    "description": "New counter value in cubic meters (m³)."
+                    "description": "New counter value in cubic meters (m\u00b3)."
                 }
             }
         },
