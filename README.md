@@ -1,4 +1,4 @@
-# Home Assistant Deembot aTick BLE Integration
+# Home Assistant aTick BLE Integration
 
 [![Tests](https://github.com/trudenboy/hassio-atick/actions/workflows/tests.yml/badge.svg)](https://github.com/trudenboy/hassio-atick/actions/workflows/tests.yml)
 [![Validate](https://github.com/trudenboy/hassio-atick/actions/workflows/validate.yml/badge.svg)](https://github.com/trudenboy/hassio-atick/actions/workflows/validate.yml)
